@@ -24,7 +24,6 @@
 
 #define FUSE_USE_VERSION 28
 #define HAVE_SETXATTR
-#define ENC_XATTR "user.enc"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -49,6 +48,7 @@
 #endif
 
 #include "aes-crypt.h"
+
 
 typedef struct {
 	char *key;
@@ -320,17 +320,40 @@ static int enc_read(const char *path, char *buf, size_t size, off_t offset,
 	int res;
 	char fpath[PATH_MAX];
 	enc_fullpath(fpath, path);
-
 	(void) fi;
-	fd = open(fpath, O_RDONLY);
-	if (fd == -1)
-		return -errno;
 
-	res = pread(fd, buf, size, offset);
-	if (res == -1)
-		res = -errno;
+	// Have to check for encryption here
+	ssize_t attrCheck = getxattr(fpath, "user.encfs", NULL, 0);
 
-	close(fd);
+	// No encryption if getattr returns -1
+	if (attrCheck < 0) {
+		fd = open(fpath, O_RDONLY);
+		if (fd == -1)
+			return -errno;
+
+		res = pread(fd, buf, size, offset);
+		if (res == -1)
+			res = -errno;
+
+		close(fd);
+	} else {
+		// Encryption 
+		FILE *file = fopen(fpath, "r");
+        FILE *temp = tmpfile();
+        
+        do_crypt(file, temp, 0, ((enc_state *) (fuse_get_context()->private_data))->key);
+
+        fseek(temp, 0, SEEK_END);
+        size_t lengthTemp = ftell(temp);
+        fseek(temp, 0, SEEK_SET);
+        
+        res = fread(buf, 1, lengthTemp, temp);
+        if (res == -1)
+            return -errno;
+
+        fclose(file);
+        fclose(temp);
+	}
 	return res;
 }
 
@@ -339,19 +362,43 @@ static int enc_write(const char *path, const char *buf, size_t size,
 {
 	int fd;
 	int res;
-	char fpath[PATH_MAX];
-	enc_fullpath(fpath, path);
+    char fpath[PATH_MAX];    
+    enc_fullpath(fpath, path);
+    
+    (void) fi;
 
-	(void) fi;
-	fd = open(fpath, O_WRONLY);
-	if (fd == -1)
-		return -errno;
+    ssize_t attrCheck = getxattr(fpath, "user.enc", NULL, 0);
 
-	res = pwrite(fd, buf, size, offset);
-	if (res == -1)
-		res = -errno;
 
-	close(fd);
+    if (attrCheck < 0) {
+	    fd = open(fpath, O_WRONLY);
+	    if (fd == -1)
+		    return -errno;
+        
+        res = pwrite(fd, buf, size, offset);
+	    if (res == -1)
+		    res = -errno;
+    
+    	close(fd);
+    } else {
+        FILE *file = fopen(fpath, "r+");
+        FILE *temp = tmpfile();
+
+        fseek(file, 0, SEEK_SET);
+        do_crypt(file, temp, 0, ((enc_state *) fuse_get_context()->private_data)->key);
+        fseek(file, 0, SEEK_SET);
+        
+        res = fwrite(buf, 1, size, temp);
+        if (res == -1)
+            return -errno;
+        fseek(temp, 0, SEEK_SET);
+        
+        do_crypt(temp, file, 1, ((enc_state *) (fuse_get_context()->private_data))->key);
+
+        fclose(file);
+        fclose(temp);
+    }
+
 	return res;
 }
 
@@ -387,9 +434,6 @@ static int enc_create(const char* path, mode_t mode, struct fuse_file_info* fi) 
 
 static int enc_release(const char *path, struct fuse_file_info *fi)
 {
-	/* Just a stub.	 This method is optional and can safely be left
-	   unimplemented */
-
 	(void) path;
 	(void) fi;
 	return 0;
@@ -398,9 +442,6 @@ static int enc_release(const char *path, struct fuse_file_info *fi)
 static int enc_fsync(const char *path, int isdatasync,
 		     struct fuse_file_info *fi)
 {
-	/* Just a stub.	 This method is optional and can safely be left
-	   unimplemented */
-
 	(void) path;
 	(void) isdatasync;
 	(void) fi;
@@ -496,6 +537,7 @@ int main(int argc, char *argv[])
 
 	enc_state *enc_data;
 	enc_data = malloc(sizeof(enc_state));
+
 
 	enc_data->key = argv[1];
 	enc_data->rootdir = realpath(argv[2], NULL);
