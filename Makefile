@@ -1,9 +1,10 @@
 # File: Makefile
-# By: Andy Sayler <www.andysayler.com>
+# By: Gannon Faul
+# Adopted from work by: Andy Sayler <www.andysayler.com>
 # Adopted from work by: Chris Wailes <chris.wailes@gmail.com>
 # Project: CSCI 3753 Programming Assignment 5
 # Creation Date: 2010/04/06
-# Modififed Date: 2012/04/12
+# Modififed Date: 2017/04/24
 # Description:
 #	This is the Makefile for PA5.
 

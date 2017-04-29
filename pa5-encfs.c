@@ -197,6 +197,7 @@ static int enc_rmdir(const char *path)
 	return 0;
 }
 
+// Leave Path Unaltered
 static int enc_symlink(const char *from, const char *to)
 {
 	int res;
@@ -211,8 +212,13 @@ static int enc_symlink(const char *from, const char *to)
 static int enc_rename(const char *from, const char *to)
 {
 	int res;
+	char ffrom[PATH_MAX];
+	enc_fullpath(ffrom, from);
 
-	res = rename(from, to);
+	char fto[PATH_MAX];
+	enc_fullpath(fto, to);
+
+	res = rename(ffrom, fto);
 	if (res == -1)
 		return -errno;
 
@@ -222,8 +228,13 @@ static int enc_rename(const char *from, const char *to)
 static int enc_link(const char *from, const char *to)
 {
 	int res;
+	char ffrom[PATH_MAX];
+	enc_fullpath(ffrom, from);
 
-	res = link(from, to);
+	char fto[PATH_MAX];
+	enc_fullpath(fto, to);
+
+	res = link(ffrom, fto);
 	if (res == -1)
 		return -errno;
 
