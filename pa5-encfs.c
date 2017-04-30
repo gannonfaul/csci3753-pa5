@@ -320,10 +320,11 @@ static int enc_read(const char *path, char *buf, size_t size, off_t offset,
 	int res;
 	char fpath[PATH_MAX];
 	enc_fullpath(fpath, path);
+
 	(void) fi;
 
 	// Have to check for encryption here
-	ssize_t attrCheck = getxattr(fpath, "user.encfs", NULL, 0);
+	ssize_t attrCheck = getxattr(fpath, "user.enc", NULL, 0);
 
 	// No encryption if getattr returns -1
 	if (attrCheck < 0) {
@@ -340,8 +341,9 @@ static int enc_read(const char *path, char *buf, size_t size, off_t offset,
 		// Encryption 
 		FILE *file = fopen(fpath, "r");
         FILE *temp = tmpfile();
-        
-        do_crypt(file, temp, 0, ((enc_state *) (fuse_get_context()->private_data))->key);
+
+        enc_state *data = (enc_state *) (fuse_get_context()->private_data);
+        do_crypt(file, temp, 0, data->key);
 
         fseek(temp, 0, SEEK_END);
         size_t lengthTemp = ftell(temp);
@@ -383,9 +385,10 @@ static int enc_write(const char *path, const char *buf, size_t size,
     } else {
         FILE *file = fopen(fpath, "r+");
         FILE *temp = tmpfile();
+        enc_state *data = (enc_state *) (fuse_get_context()->private_data);
 
         fseek(file, 0, SEEK_SET);
-        do_crypt(file, temp, 0, ((enc_state *) fuse_get_context()->private_data)->key);
+        do_crypt(file, temp, 0, data->key);
         fseek(file, 0, SEEK_SET);
         
         res = fwrite(buf, 1, size, temp);
@@ -393,7 +396,7 @@ static int enc_write(const char *path, const char *buf, size_t size,
             return -errno;
         fseek(temp, 0, SEEK_SET);
         
-        do_crypt(temp, file, 1, ((enc_state *) (fuse_get_context()->private_data))->key);
+        do_crypt(temp, file, 1, data->key);
 
         fclose(file);
         fclose(temp);
@@ -426,7 +429,17 @@ static int enc_create(const char* path, mode_t mode, struct fuse_file_info* fi) 
     if(res == -1)
 	return -errno;
 
+	FILE *file = fdopen(res, "w");
     close(res);
+    enc_state *data = (enc_state *) (fuse_get_context()->private_data);
+    do_crypt(file, file, 1, data->key);
+    fclose(file);
+
+    printf("Hello there");
+
+    if (setxattr(fpath, "user.enc", "true", 4, 0) == -1) {
+        return -errno;
+    }
 
     return 0;
 }
@@ -533,7 +546,7 @@ int main(int argc, char *argv[])
 	umask(0);
 
 	// argc = 4
-	// argv = [./pa5-encfs, <Key>, <Directory>, <Mount Point>]
+	// argv = [./pa5-encfs, <key>, <Directory>, <Mount Point>]
 
 	enc_state *enc_data;
 	enc_data = malloc(sizeof(enc_state));
