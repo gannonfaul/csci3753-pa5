@@ -22,5 +22,14 @@
 1. `make`
 2. `./pa5-encfs hello /home/user/Desktop/test /home/user/Desktop/pa5/test1`
 3. `echo "This file will be encrypted" > /home/user/Desktop/pa5/test1/encrypt.txt`
-4. `cat /home/user/Desktop/pa5/test1/encrypt.txt` (Will output "This file will be encrypted).
+4. `cat /home/user/Desktop/pa5/test1/encrypt.txt` (Will output "This file will be encrypted").
 5. `cat /home/user/Desktop/test/encrypt.txt` (Will output encrypted text).
+
+#### To test encryption/xattr functionality:
+
+1. Follow the example steps above.
+2. `echo "Unencrypted File" > /home/user/Desktop/test/plain.txt`
+3. `./aes-crypt-util -d hello /home/user/Desktop/test/encrypt.txt /home/user/Desktop/test/encrypt1.txt`
+4. `cat /home/user/Desktop/test/encrypt1.txt` (Will output "This file will be encrypted").
+5. `./xattr-util -l /home/user/Desktop/pa5/test1/encrypt.txt` (Will list xattr "user.enc").
+6. `./xattr-util -l /home/user/Desktop/pa5/test1/plain.txt` (Will list no xattr because none is set).
