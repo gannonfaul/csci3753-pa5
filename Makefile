@@ -18,25 +18,18 @@ LLIBSOPENSSL = -lcrypto
 CFLAGS = -c -g -Wall -Wextra
 LFLAGS = -g -Wall -Wextra
 
-FUSE_EXAMPLES = fusehello fusexmp 
+ENCFS_EXAMPLES = pa5-encfs 
 XATTR_EXAMPLES = xattr-util
 OPENSSL_EXAMPLES = aes-crypt-util 
-PA5_ENCFS = pa5-encfs
 
-.PHONY: all fuse-examples xattr-examples openssl-examples clean
 
-all: fuse-examples xattr-examples openssl-examples pa5-encfs
+.PHONY: all encfs-examples xattr-examples openssl-examples clean
 
-fuse-examples: $(FUSE_EXAMPLES)
+all: encfs-examples xattr-examples openssl-examples
+
+encfs-examples: $(ENCFS_EXAMPLES)
 xattr-examples: $(XATTR_EXAMPLES)
 openssl-examples: $(OPENSSL_EXAMPLES)
-pa5-encfs: $(ENCFS)
-
-fusehello: fusehello.o
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE)
-
-fusexmp: fusexmp.o
-	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE)
 
 pa5-encfs: pa5-encfs.o aes-crypt.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSFUSE) $(LLIBSOPENSSL)
@@ -46,12 +39,6 @@ xattr-util: xattr-util.o
 
 aes-crypt-util: aes-crypt-util.o aes-crypt.o
 	$(CC) $(LFLAGS) $^ -o $@ $(LLIBSOPENSSL)
-
-fusehello.o: fusehello.c
-	$(CC) $(CFLAGS) $(CFLAGSFUSE) $<
-
-fusexmp.o: fusexmp.c
-	$(CC) $(CFLAGS) $(CFLAGSFUSE) $<
 
 pa5-encfs.o: pa5-encfs.c aes-crypt.h
 	$(CC) $(CFLAGS) $(CFLAGSFUSE) $<
@@ -66,10 +53,9 @@ aes-crypt.o: aes-crypt.c aes-crypt.h
 	$(CC) $(CFLAGS) $<
 
 clean:
-	rm -f $(FUSE_EXAMPLES)
+	rm -f $(ENCFS_EXAMPLES)
 	rm -f $(XATTR_EXAMPLES)
 	rm -f $(OPENSSL_EXAMPLES)
-	rm -f $(PA5_ENCFS)
 	rm -f *.o
 	rm -f *~
 	rm -f handout/*~
