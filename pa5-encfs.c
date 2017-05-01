@@ -327,7 +327,7 @@ static int enc_read(const char *path, char *buf, size_t size, off_t offset,
 	ssize_t attrCheck = getxattr(fpath, "user.pa5-encfs.encrypted", NULL, 0);
 
 	// No encryption if getattr returns -1
-	if (attrCheck < 1) {
+	if (attrCheck < 0) {
 		fd = open(fpath, O_RDONLY);
 		if (fd == -1)
 			return -errno;
@@ -364,7 +364,7 @@ static int enc_write(const char *path, const char *buf, size_t size,
 {
 	int fd;
 	int res;
-    char fpath[PATH_MAX]; 
+    char fpath[PATH_MAX];    
     enc_fullpath(fpath, path);
     
     (void) fi;
@@ -372,7 +372,7 @@ static int enc_write(const char *path, const char *buf, size_t size,
     ssize_t attrCheck = getxattr(fpath, "user.pa5-encfs.encrypted", NULL, 0);
 
 
-    if (attrCheck < 1) {
+    if (attrCheck < 0) {
 	    fd = open(fpath, O_WRONLY);
 	    if (fd == -1)
 		    return -errno;
