@@ -31,5 +31,5 @@
 2. `echo "Unencrypted File" > /home/user/Desktop/test/plain.txt`
 3. `./aes-crypt-util -d hello /home/user/Desktop/test/encrypt.txt /home/user/Desktop/test/encrypt1.txt`
 4. `cat /home/user/Desktop/test/encrypt1.txt` (Will output "This file will be encrypted").
-5. `./xattr-util -l /home/user/Desktop/pa5/test1/encrypt.txt` (Will list xattr "user.enc").
+5. `./xattr-util -l /home/user/Desktop/pa5/test1/encrypt.txt` (Will list xattr "user.pa5-encfs.encrypted").
 6. `./xattr-util -l /home/user/Desktop/pa5/test1/plain.txt` (Will list no xattr because none is set).

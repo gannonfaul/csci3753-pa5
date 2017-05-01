@@ -324,10 +324,10 @@ static int enc_read(const char *path, char *buf, size_t size, off_t offset,
 	(void) fi;
 
 	// Have to check for encryption here
-	ssize_t attrCheck = getxattr(fpath, "user.enc", NULL, 0);
+	ssize_t attrCheck = getxattr(fpath, "user.pa5-encfs.encrypted", NULL, 0);
 
 	// No encryption if getattr returns -1
-	if (attrCheck < 0) {
+	if (attrCheck < 1) {
 		fd = open(fpath, O_RDONLY);
 		if (fd == -1)
 			return -errno;
@@ -364,15 +364,15 @@ static int enc_write(const char *path, const char *buf, size_t size,
 {
 	int fd;
 	int res;
-    char fpath[PATH_MAX];    
+    char fpath[PATH_MAX]; 
     enc_fullpath(fpath, path);
     
     (void) fi;
 
-    ssize_t attrCheck = getxattr(fpath, "user.enc", NULL, 0);
+    ssize_t attrCheck = getxattr(fpath, "user.pa5-encfs.encrypted", NULL, 0);
 
 
-    if (attrCheck < 0) {
+    if (attrCheck < 1) {
 	    fd = open(fpath, O_WRONLY);
 	    if (fd == -1)
 		    return -errno;
@@ -437,7 +437,7 @@ static int enc_create(const char* path, mode_t mode, struct fuse_file_info* fi) 
 
     printf("Hello there");
 
-    if (setxattr(fpath, "user.enc", "true", 4, 0) == -1) {
+    if (setxattr(fpath, "user.pa5-encfs.encrypted", "true", 4, 0) == -1) {
         return -errno;
     }
 
